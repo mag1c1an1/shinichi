@@ -11,15 +11,25 @@ pub trait AsSlice {
     }
 }
 
+mod db;
+
+
 pub struct DB {
     file: File,
 }
 
 enum DBError {}
 
+
+
+
+
 impl DB {
     pub fn open(db_path: impl AsRef<Path>) -> Result<Self, DBError> {
         todo!()
+        // let db = DB {
+        //     file: File::open(db_path)?,
+        // };
     }
 
     pub fn put(key: Slice, value: Slice) {
