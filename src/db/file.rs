@@ -1,11 +1,15 @@
 use std::{
     fmt::Debug,
     fs::{File, OpenOptions},
-    io::{self, Read},
+    io::{self, Read, Write},
+    marker::PhantomData,
     path::Path,
 };
 
+use bytes::{BufMut, Bytes, BytesMut};
 use snafu::{Snafu, whatever};
+
+use crate::db::slice::Slice;
 
 const FILE_PREFIX: &[u8; 13] = b"mag1cian's db";
 
@@ -38,6 +42,26 @@ impl DBFile {
         } else {
             Ok(Self { file: f })
         }
+    }
+}
+
+const MAX_SLICE_LEN: usize = 65535;
+
+/// layout [keylen,valuelen,deleted,key,value]
+/// 2b,2b,1b
+struct KVPair<'a> {
+    key: &'a Slice,
+    value: &'a Slice,
+}
+
+impl<'a> KVPair<'a> {
+    fn write_header(&self, dst: &mut impl Write) {
+        // key_len
+        dst.write(&(self.key.len() as u16).to_be_bytes()).unwrap();
+        // value_len
+        dst.write(&(self.value.len() as u16).to_be_bytes()).unwrap();
+        // tomb
+        dst.write(&(0u16).to_be_bytes()).unwrap();
     }
 }
 
