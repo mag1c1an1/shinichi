@@ -9,7 +9,7 @@ use bytes::Bytes;
 /// MAX_LEN is 65535
 /// more than it will be trancate
 #[derive(PartialEq, Eq)]
-pub struct Slice(pub(super) Bytes);
+pub struct Slice(pub Bytes);
 
 impl Slice {
     pub fn len(&self) -> usize {

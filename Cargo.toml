@@ -12,8 +12,12 @@ tempfile.workspace = true
 
 [workspace]
 resolver = "3"
+members = [ "client","server"]
 
 
 [workspace.dependencies]
 snafu = "0.8"
 tempfile = "3.20"
+tokio = { version = "1", features = ["full"] }
+axum = "0.8"
+reqwest = "0.12"
