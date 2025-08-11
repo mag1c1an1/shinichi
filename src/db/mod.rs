@@ -1,14 +1,12 @@
 mod file;
-use bytes::Buf;
+use bytes::Bytes;
 use file::DBFile;
 use file::DBFileError;
 use snafu::ResultExt;
 use snafu::Snafu;
 
 mod slice;
-use std::io::Read;
-use std::io::Write;
-use std::{fs::File, path::Path};
+use std::path::Path;
 
 use slice::Slice;
 
@@ -37,7 +35,27 @@ impl DB {
         Ok(())
     }
 
-    pub fn get(&self,key: &Slice) -> Result<Option<Slice>, DBError> {
-        self.file.get(key)
+    pub fn update(&mut self, key: &Slice, value: &Slice) -> Result<(), DBError> {
+        self.put(key, value)
+    }
+
+    pub fn delete(&mut self, key: &Slice) -> Result<(), DBError> {
+        self.put(key, &Slice(Bytes::new()))
+    }
+
+    pub fn get(&mut self, key: &Slice) -> Result<Option<Slice>, DBError> {
+        self.file.get(key).context(FileSnafu)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use crate::{DB, db::slice::ToSlice};
+
+    #[test]
+    fn test_put() {
+        let mut db = DB::open("./db.shi").unwrap();
+        db.put(&"hello".to_slice(), &"world".to_slice()).unwrap();
     }
 }

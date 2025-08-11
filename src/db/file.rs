@@ -2,12 +2,10 @@ use std::{
     fmt::Debug,
     fs::{File, OpenOptions, exists},
     io::{self, Read, Seek, Write},
-    marker::PhantomData,
-    num::TryFromIntError,
     path::Path,
 };
 
-use bytes::{Buf, BufMut, Bytes, BytesMut};
+use bytes::{Buf, Bytes, BytesMut};
 use snafu::{ResultExt, Snafu, whatever};
 
 use crate::db::slice::Slice;
@@ -52,7 +50,7 @@ impl DBFile {
             f.seek(io::SeekFrom::Start(0)).whatever_context("")?;
             whatever!(f.read_exact(&mut buf), "");
             if &buf[..] != FILE_PREFIX {
-                return whatever!("{path:?} is not valid");
+                whatever!("{path:?} is not valid")
             } else {
                 // read all pairs
                 let (nums, last_kv_len) = pair_nums_of_file(&mut f)?;
@@ -76,7 +74,9 @@ impl DBFile {
             .append(true)
             .open(path)
             .whatever_context("")?;
-        f.write(&FILE_PREFIX[..]).whatever_context("")?;
+        let x = f.write(&FILE_PREFIX[..]).whatever_context("")?;
+        println!(" create {x}");
+        println!("{}", f.metadata().unwrap().len());
         Ok(Self {
             file: f,
             pair_nums: 0,
@@ -87,39 +87,86 @@ impl DBFile {
     /// write kv pair
     pub fn write_pair(&mut self, kv_pair: &KVPair) -> Result<(), DBFileError> {
         // key_len
-        let size = whatever!(
-            self.write(&(kv_pair.key.len() as u16).to_be_bytes()),
+        whatever!(
+            self.write_all(&(kv_pair.key.len() as u16).to_be_bytes()),
             "write key len failed"
         );
-        assert_eq!(size, kv_pair.key.len());
         // value_len
-        let size = whatever!(
-            self.write(&(kv_pair.value.len() as u16).to_be_bytes()),
+        whatever!(
+            self.write_all(&(kv_pair.value.len() as u16).to_be_bytes()),
             "write value len failed"
         );
-        assert_eq!(size, kv_pair.value.len());
         // tomb
-        let size = whatever!(self.write(&(0u16).to_be_bytes()), "write tomb failed");
-        assert_eq!(size, 1);
+        whatever!(self.write_all(&(0u16).to_be_bytes()), "write tomb failed");
         // key
-        let size = whatever!(self.write(&kv_pair.key.0), "write key failed");
-        assert_eq!(size, kv_pair.key.len());
+        whatever!(self.write_all(&kv_pair.key.0), "write key failed");
         // value
-        let size = whatever!(self.write(&kv_pair.value.0), "write value failed");
-        assert_eq!(size, kv_pair.value.len());
+        whatever!(self.write_all(&kv_pair.value.0), "write value failed");
         self.pair_nums += 1;
         self.last_kv_len = Some(kv_pair.total_len());
         Ok(())
     }
 
-    pub fn get(&self, key: &Slice) -> Result<Option<Slice>, super::DBError> {
-        for _ in 0..self.pair_nums {}
-        Ok(None)
+    pub fn get(&mut self, key: &Slice) -> Result<Option<Slice>, DBFileError> {
+        let mut ret = None;
+
+        let mut buf = BytesMut::with_capacity(MAX_SLICE_LEN * 2);
+
+        let mut cursor = FILE_PREFIX.len();
+
+        self.file.seek(io::SeekFrom::Start(cursor as u64)).unwrap();
+        for _ in 0..self.pair_nums {
+            // read meta (5b)
+            whatever!(
+                self.file.read_exact(&mut buf[cursor..cursor + META_LEN]),
+                ""
+            );
+
+            let k_len = buf.get_u16();
+            let v_len = buf.get_u16();
+            let tomb = buf.get_u8();
+            cursor += 5;
+
+            if tomb > 0 {
+                continue;
+            }
+
+            if buf.capacity() - cursor < (k_len + v_len) as usize {
+                buf.clear();
+                cursor = 0
+            }
+
+            whatever!(
+                self.file
+                    .read_exact(&mut buf[cursor..cursor + (k_len + v_len) as usize]),
+                ""
+            );
+
+            // need copy ?
+            let key_slice = Slice(Bytes::copy_from_slice(
+                &buf[cursor..cursor + k_len as usize],
+            ));
+            cursor += k_len as usize;
+
+            let val_slice = Slice(Bytes::copy_from_slice(
+                &buf[cursor..cursor + v_len as usize],
+            ));
+            cursor += v_len as usize;
+
+            if key == &key_slice {
+                ret = Some(val_slice)
+            }
+        }
+        Ok(ret)
     }
 }
 
 fn pair_nums_of_file(f: &mut File) -> Result<(usize, usize), DBFileError> {
     let file_len = f.metadata().whatever_context("")?.len();
+    if file_len == FILE_PREFIX.len() as u64 {
+        // no kv pairs
+        return Ok((0, 0));
+    }
     f.seek(io::SeekFrom::Start(FILE_PREFIX.len() as u64))
         .whatever_context("")?;
     let mut buf = BytesMut::with_capacity(1024);
@@ -144,8 +191,10 @@ fn pair_nums_of_file(f: &mut File) -> Result<(usize, usize), DBFileError> {
         if now == file_len {
             // success
             return Ok((nums, META_LEN + kv_len));
+        } else if now > file_len {
+            whatever!("kv not match")
         } else {
-            return whatever!("k,v not match");
+            continue;
         }
     }
 }
@@ -166,7 +215,7 @@ impl Read for DBFile {
     }
 }
 
-const MAX_SLICE_LEN: usize = 65535;
+const MAX_SLICE_LEN: usize = 65536;
 const META_LEN: usize = 2 + 2 + 1;
 
 /// layout [keylen,valuelen,deleted,key,value]
@@ -198,17 +247,21 @@ mod tests {
     #[test]
     fn test_db_file() {
         {
+            // create
             let tmp_dir = tempdir().unwrap();
             let file_path = tmp_dir.path().join("dbfile");
             let dbfile = DBFile::open(file_path);
-            assert!(dbfile.is_err())
+            assert!(dbfile.is_ok())
         }
         {
             let tmp_dir = tempdir().unwrap();
             let file_path = tmp_dir.path().join("dbfile");
-            let mut f = File::create(file_path.as_path()).unwrap();
-            let sz = f.write(FILE_PREFIX).unwrap();
-            assert_eq!(sz, FILE_PREFIX.len());
+            {
+                let mut f = File::create(file_path.as_path()).unwrap();
+                let sz = f.write(FILE_PREFIX).unwrap();
+                assert_eq!(sz, FILE_PREFIX.len());
+                // file close here
+            }
 
             let dbfile = DBFile::open(file_path);
             assert!(dbfile.is_ok());
@@ -220,13 +273,19 @@ mod tests {
             let sz = f.write(FILE_PREFIX).unwrap();
             assert_eq!(sz, FILE_PREFIX.len());
             let s = b"hello_db";
-            f.write(s);
+            f.write(s).unwrap();
 
+            // seek is not used
             let mut dbfile = DBFile::open(file_path).unwrap();
             let mut buf = Vec::<u8>::new();
             let sz = dbfile.file.read_to_end(&mut buf).unwrap();
             assert_eq!(s.len(), sz);
             assert_eq!(&buf[..], s);
         }
+    }
+
+    #[test]
+    fn test_create() {
+        let f = DBFile::open("sasdfs").unwrap();
     }
 }
