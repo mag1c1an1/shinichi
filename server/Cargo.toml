@@ -8,3 +8,4 @@ tokio.workspace = true
 axum.workspace = true
 shinichi = { path = "../" }
 snafu.workspace = true
+parking_lot = "0.12"

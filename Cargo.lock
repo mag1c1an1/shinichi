@@ -547,6 +547,7 @@ name = "shinchi-server"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "parking_lot",
  "shinichi",
  "snafu",
  "tokio",
