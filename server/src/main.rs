@@ -9,10 +9,6 @@ async fn get_val(Path(key): Path<String>, db: Arc<Mutex<DB>>) -> String {
     "value".into()
 }
 
-async fn get_val(Path(key): Path<String>, db: Arc<Mutex<DB>>) -> String {
-    "value".into()
-}
-
 #[tokio::main]
 #[snafu::report]
 async fn main() -> Result<(), Whatever> {

@@ -1,17 +1,16 @@
-mod file;
 use bytes::Bytes;
 use file::DBFile;
 use file::DBFileError;
 use snafu::ResultExt;
 use snafu::Snafu;
-
-mod slice;
 use std::path::Path;
 
+mod slice;
 use slice::Slice;
 
-use crate::db::file::KVPair;
+mod file;
 
+use crate::db::file::KVPair;
 pub struct DB {
     file: DBFile,
 }
