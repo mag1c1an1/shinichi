@@ -1,9 +1,11 @@
 add_rules("mode.debug", "mode.release")
 
-target("myrocks")
-    set_kind("binary")
-    add_files("src/*.cpp")
+set_languages("c++23")
 
+target("myrocks")
+    set_kind("static")
+    add_files("src/*.cpp")
+target_end()
 --
 -- If you want to known more usage about xmake, please see https://xmake.io
 --
