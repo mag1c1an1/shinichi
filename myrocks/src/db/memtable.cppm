@@ -1,0 +1,4 @@
+namespace MyRocks {
+class MemTable{
+};
+}

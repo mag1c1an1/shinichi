@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+shinichi = { path = "../" }
 tokio.workspace = true
 axum.workspace = true
-shinichi = { path = "../" }
 snafu.workspace = true
 parking_lot = "0.12"
