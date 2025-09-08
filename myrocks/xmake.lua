@@ -2,7 +2,7 @@ add_rules("mode.debug", "mode.release")
 
 set_languages("c++23")
 
-add_requires("gtest",{system = false,configs ={ main = true}})
+add_requires("gtest v1.10.0",{system = false,configs ={ main = true}})
 
 target("myrocks")
     set_kind("static")
@@ -13,8 +13,9 @@ target("myrocks")
     -- add_files("src/**.cppm")
 target_end()
 
+
 -- add tests
-for _, filepath in ipairs(os.files("src/utils/_test.cpp")) do
+for _, filepath in ipairs(os.files("src/utils/*_test.cpp")) do
     local relpath = path.relative(filepath, "src")
     local targetname = relpath:gsub("[/\\]", "_"):gsub("%.cpp$", "") -- 变成合法 target 名
     target(targetname)

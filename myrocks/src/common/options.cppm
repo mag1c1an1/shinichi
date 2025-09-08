@@ -1,5 +1,5 @@
 module;
 
-export module common:options;
+export module myrocks.common:options;
 
 export class Options;
