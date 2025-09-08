@@ -1,5 +1,6 @@
 module;
 #include <cstdint>
+#include <cstddef>
 export module myrocks.env;
 
 import myrocks.common;

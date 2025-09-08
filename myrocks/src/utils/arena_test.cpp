@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
-import myrocks.utils;
+import myrocks.utils.random;
+import myrocks.utils.arena;
 
 using namespace MyRocks;
 TEST(ArenaTest, Simple) {
