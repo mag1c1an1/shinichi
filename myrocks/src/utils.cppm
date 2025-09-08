@@ -2,7 +2,6 @@ module;
 #include <cstdint>
 
 export module myrocks.utils;
-export import myrocks.utils.arena;
 
 namespace MyRocks{
 export class Random{

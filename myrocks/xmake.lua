@@ -6,11 +6,8 @@ add_requires("gtest v1.10.0",{system = false,configs ={ main = true}})
 
 target("myrocks")
     set_kind("static")
-    add_files("src/utils.cpp")
-    add_files("src/utils.cppm",{public = true})
-    add_files("src/utils/*.cpp|*_test.cpp")
-    add_files("src/utils/*.cppm",{public=true})
-    -- add_files("src/**.cppm")
+    add_files("src/**.cppm",{public=true})
+    add_files("src/**.cpp|**_test.cpp")
 target_end()
 
 

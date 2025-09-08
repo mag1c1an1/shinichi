@@ -1,6 +1,4 @@
-module;
-
-export module myrocks:db;
+module myrocks;
 
 namespace MyRocks {
 class DBImpl : public MyRocksDB {

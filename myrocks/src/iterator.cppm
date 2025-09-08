@@ -5,11 +5,14 @@ export module myrocks.iterator;
 import myrocks.common;
 
 namespace MyRocks {
-class Iterator {
+export class Iterator {
  public:
   Iterator();
   ~Iterator();
 
   Slice key() const;
 };
+
+export class TransactionLogIterator {};
+
 }  // namespace MyRocks
