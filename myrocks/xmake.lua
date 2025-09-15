@@ -3,6 +3,7 @@ add_rules("mode.debug", "mode.release")
 set_languages("c++23")
 
 add_requires("gtest v1.10.0",{system = false,configs ={ main = true}})
+add_requires("fmt 11.2.0")
 
 target("myrocks")
     set_kind("static")
@@ -24,7 +25,7 @@ for _, filepath in ipairs(os.files("src/utils/*_test.cpp")) do
         add_packages("gtest")
     target_end()
 end
-
+includes("tools")
 -- --
 -- -- If you want to known more usage about xmake, please see https://xmake.io
 -- --

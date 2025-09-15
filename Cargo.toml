@@ -12,7 +12,7 @@ tempfile.workspace = true
 
 [workspace]
 resolver = "3"
-members = ["client", "microbench", "server"]
+members = ["client", "microbench", "myarrow", "server", "tools/fio"]
 
 
 [workspace.dependencies]
